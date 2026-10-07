@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Verifikasi Data Pelaksanaan SKM</title>
+<style>
+  :root{
+    --bg:#f5f7fb;
+    --card:#ffffff;
+    --text:#172033;
+    --muted:#6b7280;
+    --line:#e5e7eb;
+    --primary:#2457d6;
+    --primary-soft:#eef4ff;
+    --blue-soft:#f2f7ff;
+    --gray-soft:#f8fafc;
+    --success:#17803d;
+    --danger:#c2362b;
+    --warning:#b7791f;
+    --shadow:0 8px 24px rgba(16,24,40,.06);
+    --radius:16px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:var(--bg);
+    color:var(--text);
+  }
+  .wrap{max-width:1440px;margin:0 auto;padding:28px}
+  .topbar{
+    display:flex;justify-content:space-between;gap:20px;align-items:flex-start;
+    margin-bottom:20px;
+  }
+  .eyebrow{
+    font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--primary);
+    margin-bottom:8px;
+  }
+  h1{margin:0;font-size:28px;line-height:1.2}
+  .subtitle{margin-top:8px;color:var(--muted);font-size:14px}
+  .status-pill{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);
+    color:var(--muted);font-size:13px;font-weight:600;
+  }
+  .notice{
+    display:flex;gap:12px;align-items:flex-start;
+    margin-bottom:18px;padding:14px 16px;border:1px solid #d9e5ff;
+    background:#f4f8ff;border-radius:14px;color:#36517d;font-size:13px;
+  }
+  .notice-icon{
+    flex:0 0 auto;width:24px;height:24px;border-radius:50%;
+    display:grid;place-items:center;background:white;border:1px solid #cddcff;
+    font-weight:800;color:var(--primary);
+  }
+  .tag-badge{
+    display:inline-flex;align-items:center;padding:6px 9px;border-radius:999px;
+    font-size:11px;font-weight:800;line-height:1;
+  }
+  .tag-skm{background:#eef2f7;color:#475569}
+  .tag-change{background:#fff4e8;color:#a35a00}
+  .dot{width:8px;height:8px;border-radius:50%;background:#9ca3af}
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:20px;
+  }
+  .selector-card{margin-bottom:18px}
+  .selector-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end}
+  label{display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:7px}
+  select,input,textarea{
+    width:100%;border:1px solid #d7dce5;border-radius:10px;
+    padding:11px 12px;background:white;color:var(--text);font-size:14px;outline:none;
+  }
+  select:focus,input:focus,textarea:focus{border-color:#8db0ff;box-shadow:0 0 0 3px rgba(36,87,214,.10)}
+  button{
+    border:0;border-radius:10px;padding:11px 16px;font-weight:700;cursor:pointer;font-size:14px
+  }
+  .btn-primary{background:var(--primary);color:white}
+  .btn-secondary{background:white;color:#334155;border:1px solid var(--line)}
+  .btn-danger{background:#fff1f0;color:var(--danger);border:1px solid #ffd4cf}
+  .btn-success{background:#edf9f0;color:var(--success);border:1px solid #caecd2}
+  .empty{
+    padding:34px 16px;text-align:center;color:var(--muted)
+  }
+  .empty strong{display:block;color:#334155;font-size:16px;margin-bottom:6px}
+  .section{margin-top:18px}
+  .section-head{
+    display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:14px
+  }
+  .section-title{font-weight:800;font-size:17px}
+  .section-desc{color:var(--muted);font-size:13px;margin-top:3px}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .metric-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+  .metric{
+    border:1px solid var(--line);border-radius:14px;padding:15px;background:white
+  }
+  .metric.blue{background:var(--blue-soft)}
+  .metric .label{font-size:12px;color:var(--muted);min-height:34px}
+  .metric .value{font-size:24px;font-weight:800;margin-top:8px}
+  .mini-list{display:grid;gap:10px}
+  .mini-row{
+    display:flex;justify-content:space-between;gap:14px;
+    border-bottom:1px dashed var(--line);padding-bottom:9px;font-size:14px
+  }
+  .mini-row:last-child{border-bottom:0;padding-bottom:0}
+  .mini-row span:first-child{color:var(--muted)}
+  .filters{
+    display:grid;grid-template-columns:1fr 1fr 1.4fr auto;gap:10px;margin:12px 0 14px
+  }
+  .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}
+  table{border-collapse:separate;border-spacing:0;width:100%;min-width:1100px;font-size:13px}
+  th{
+    position:sticky;top:0;background:#f8fafc;color:#475569;font-size:12px;text-align:left;
+    padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap;z-index:1
+  }
+  td{padding:11px 12px;border-bottom:1px solid #edf0f4;vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  .preclean{background:#fbfcfe}
+  .postclean{background:#f3f7ff}
+  .toolbar{
+    display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;color:var(--muted);font-size:12px
+  }
+  .decision-box{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .choice{
+    border:1px solid var(--line);border-radius:14px;padding:16px;cursor:pointer
+  }
+  .choice.active{border-color:#8db0ff;background:var(--primary-soft)}
+  .choice h3{margin:0 0 5px;font-size:15px}
+  .choice p{margin:0;color:var(--muted);font-size:12px}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:14px}
+  .full{grid-column:1/-1}
+  .hidden{display:none!important}
+  .badge{
+    display:inline-flex;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:700
+  }
+  .badge.gray{background:#eef1f5;color:#64748b}
+  .badge.red{background:#fff0ef;color:#b42318}
+  .badge.green{background:#edf9f0;color:#137333}
+  .badge.orange{background:#fff4e8;color:#a35a00}
+  .admin-section{
+    border:1px dashed #cbd5e1;
+    background:#fbfcfe;
+  }
+  .admin-kicker{
+    font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+    color:#64748b;margin-bottom:4px;
+  }
+  .consultation-box{
+    margin-top:14px;padding:16px;border:1px solid var(--line);
+    border-radius:14px;background:#fbfcfe;
+  }
+  .radio-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+  .radio-pill{
+    border:1px solid var(--line);border-radius:10px;padding:10px 13px;
+    background:white;cursor:pointer;font-size:13px;font-weight:700;color:#475569;
+  }
+  .radio-pill.active{border-color:#8db0ff;background:var(--primary-soft);color:var(--primary)}
+  .slot-grid{
+    display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));
+    gap:8px;margin-top:10px;
+  }
+  .slot{
+    border:1px solid var(--line);border-radius:10px;background:white;
+    padding:10px 12px;text-align:center;font-weight:700;font-size:13px;
+    cursor:pointer;
+  }
+  .slot:hover{border-color:#9ab7ff}
+  .slot.active{border-color:var(--primary);background:var(--primary-soft);color:var(--primary)}
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(15,23,42,.48);
+    display:grid;place-items:center;padding:20px;z-index:50;
+  }
+  .modal{
+    width:min(620px,100%);background:white;border-radius:18px;
+    box-shadow:0 24px 80px rgba(15,23,42,.25);padding:22px;
+  }
+  .modal h2{margin:0 0 6px;font-size:20px}
+  .modal p{margin:0;color:var(--muted);font-size:13px}
+  .confirm-list{display:grid;gap:9px;margin:18px 0}
+  .confirm-row{
+    display:flex;justify-content:space-between;gap:18px;
+    border-bottom:1px dashed var(--line);padding-bottom:8px;font-size:13px
+  }
+  .confirm-row span:first-child{color:var(--muted)}
+  .zoom-box{
+    margin-top:14px;padding:14px;border-radius:12px;background:#f4f8ff;
+    border:1px solid #d9e5ff;font-size:13px;line-height:1.55
+  }
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+  @media(max-width:800px){.slot-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:1000px){
+    .grid-2,.metric-grid,.form-grid,.filters,.selector-row{grid-template-columns:1fr}
+    .topbar{flex-direction:column}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">Evaluasi Reformasi Birokrasi 2026</div>
+      <h1>Verifikasi Data Pelaksanaan SKM</h1>
+      <div class="subtitle">Pilih instansi untuk meninjau data pelayanan, responden, dan hasil verifikasi.</div>
+    </div>
+    <div class="status-pill"><span class="dot"></span><span id="globalStatus">Belum ada instansi dipilih</span></div>
+  </div>
+
+  <div class="notice">
+    <div class="notice-icon">i</div>
+    <div>
+      <strong>Periode data verifikasi</strong><br>
+      Data yang ditampilkan pada halaman ini terbatas pada data penerimaan layanan periode <strong>1 Januari sampai dengan 30 September 2026</strong>.
+    </div>
+  </div>
+
+  <div class="card selector-card">
+    <div class="selector-row">
+      <div>
+        <label for="institutionSelect">Instansi</label>
+        <select id="institutionSelect">
+          <option value="">Pilih instansi</option>
+          <option value="ANRI">Arsip Nasional Republik Indonesia</option>
+          <option value="PANRB">Kementerian PANRB</option>
+          <option value="JABAR">Pemerintah Provinsi Jawa Barat</option>
+        </select>
+        <div style="margin-top:8px;font-size:12px;color:var(--muted)">
+          Tag instansi: <span id="selectorTag">—</span>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="showInstitution()">Tampilkan</button>
+    </div>
+  </div>
+
+  <div id="landingEmpty" class="card empty">
+    <strong>Belum ada instansi dipilih</strong>
+    Pilih instansi pada dropdown di atas untuk menampilkan data verifikasi.
+  </div>
+
+  <div id="appContent" class="hidden">
+    <div class="card">
+      <div class="section-head">
+        <div>
+          <div class="section-title" id="institutionName">—</div>
+          <div class="section-desc">Data terakhir diperbarui: <span id="lastUpdated">30 September 2026</span></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span id="institutionTag" class="tag-badge tag-skm">Tidak Mengajukan Perubahan</span>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <div class="section-title" style="font-size:14px;margin-bottom:12px">Struktur Data Instansi</div>
+          <div class="mini-list">
+            <div class="mini-row"><span>Level 0</span><strong id="sumL0">1</strong></div>
+            <div class="mini-row"><span>Level 1</span><strong id="sumL1">0</strong></div>
+            <div class="mini-row"><span>Level 2</span><strong id="sumL2">0</strong></div>
+            <div class="mini-row"><span>Jenis Pelayanan</span><strong id="sumService">0</strong></div>
+            <div class="mini-row"><span>Jenis Pelayanan Memiliki Responden</span><strong id="sumServiceWithRespondents">—</strong></div>
+          </div>
+        </div>
+        <div>
+          <div class="section-title" style="font-size:14px;margin-bottom:12px">Data Responden</div>
+          <div class="metric-grid" style="grid-template-columns:repeat(2,1fr)">
+            <div class="metric"><div class="label">Responden Survei Online</div><div class="value" id="sumOnline">0</div></div>
+            <div class="metric"><div class="label">Responden Bulk Offline</div><div class="value" id="sumOffline">0</div></div>
+            <div class="metric blue"><div class="label">Total Sebelum Cleansing</div><div class="value" id="sumBefore">0</div></div>
+            <div class="metric blue"><div class="label">Total Pasca Cleansing</div><div class="value" id="sumAfter">—</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card section">
+      <div class="section-head">
+        <div>
+          <div class="section-title">Rincian Data per Pelayanan</div>
+          <div class="section-desc">Seluruh pelayanan tetap ditampilkan, termasuk pelayanan dengan 0 responden.</div>
+        </div>
+        <button class="btn-secondary">Ekspor Excel</button>
+      </div>
+
+      <div class="filters">
+        <select id="filterL1"><option>Semua Level 1</option></select>
+        <select id="filterL2"><option>Semua Level 2</option></select>
+        <input id="filterService" placeholder="Cari nama pelayanan..." />
+        <button class="btn-secondary">Reset</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Level 1</th>
+              <th>Level 2</th>
+              <th>Nama Pelayanan</th>
+              <th class="num">Resp Online</th>
+              <th class="num preclean">Resp Bulk Offline Sebelum Cleansing</th>
+              <th class="num postclean">Resp Bulk Offline Pasca Cleansing</th>
+              <th class="num preclean">Total Responden Sebelum Cleansing</th>
+              <th class="num postclean">Total Responden Pasca Cleansing</th>
+            </tr>
+          </thead>
+          <tbody id="serviceBody"></tbody>
+        </table>
+      </div>
+      <div class="toolbar">
+        <span id="serviceInfo">0 data</span>
+        <div>
+          <button class="btn-secondary">Sebelumnya</button>
+          <button class="btn-secondary">Berikutnya</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card section">
+      <div class="section-head">
+        <div>
+          <div class="section-title">Log Upload Bulk Survei Offline</div>
+          <div class="section-desc">Riwayat unggahan data offline yang terkait dengan instansi terpilih.</div>
+        </div>
+        <button class="btn-secondary">Ekspor Excel</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Timestamp Unggah Survei</th>
+              <th>Level 1</th>
+              <th>Level 2</th>
+              <th>Nama Survei</th>
+              <th class="num">Jumlah Responden</th>
+              <th>Status Approval Akun PJ</th>
+              <th>Status Usulan Perubahan</th>
+            </tr>
+          </thead>
+          <tbody id="logBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="decisionSection" class="card section">
+      <div class="section-head">
+        <div>
+          <div class="section-title">Keputusan Verifikasi</div>
+          <div class="section-desc">Tetapkan hasil verifikasi setelah seluruh data ditinjau.</div>
+        </div>
+      </div>
+
+      <div class="decision-box">
+        <div class="choice" id="acceptChoice" onclick="chooseDecision('accept')">
+          <h3>Terima Data</h3>
+          <p>Data dinilai sesuai dan dapat digunakan dalam proses evaluasi.</p>
+        </div>
+        <div class="choice" id="rejectChoice" onclick="chooseDecision('reject')">
+          <h3>Tolak Data</h3>
+          <p>Data memerlukan perbaikan atau penyesuaian oleh instansi.</p>
+        </div>
+      </div>
+
+      <div id="decisionForm" class="hidden">
+        <div class="form-grid">
+          <div><label>Nama Reviewer</label><input id="reviewerName" placeholder="Nama lengkap" /></div>
+          <div><label>NIP</label><input id="reviewerNip" placeholder="NIP" /></div>
+          <div><label>Unit/Instansi</label><input id="reviewerUnit" placeholder="Unit kerja" /></div>
+
+          <div id="rejectReason" class="full hidden">
+            <label>Alasan Penolakan</label>
+            <textarea id="rejectionReason" rows="4" placeholder="Tuliskan alasan penolakan secara jelas..."></textarea>
+
+            <div class="consultation-box">
+              <label>Perlu konsultasi dengan Tim Kementerian PANRB?</label>
+              <div class="radio-row">
+                <button type="button" class="radio-pill" id="consultNo" onclick="setConsultation(false)">Tidak</button>
+                <button type="button" class="radio-pill" id="consultYes" onclick="setConsultation(true)">Ya</button>
+              </div>
+
+              <div id="consultationScheduler" class="hidden" style="margin-top:14px">
+                <div class="form-grid" style="grid-template-columns:1fr 2fr;margin-top:0">
+                  <div>
+                    <label>Tanggal Konsultasi</label>
+                    <select id="consultationDate" onchange="renderSlots()">
+                      <option value="">Pilih tanggal</option>
+                      <option value="2026-10-08">Kamis, 8 Oktober 2026</option>
+                      <option value="2026-10-09">Jumat, 9 Oktober 2026</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label>Waktu Tersedia</label>
+                    <div id="slotGrid" class="slot-grid">
+                      <div style="grid-column:1/-1;color:#94a3b8;font-size:13px;padding:10px 0">
+                        Pilih tanggal terlebih dahulu.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div style="margin-top:10px;color:var(--muted);font-size:12px">
+                  Durasi setiap sesi konsultasi adalah 10 menit. Breakout room akan dialokasikan otomatis oleh sistem.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
+          <button class="btn-secondary" onclick="cancelDecision()">Batal</button>
+          <button class="btn-primary" onclick="openDecisionConfirmation()">Lanjutkan</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card section">
+      <div class="section-head">
+        <div>
+          <div class="section-title">Log Keputusan</div>
+          <div class="section-desc">Riwayat keputusan verifikasi instansi.</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Waktu</th>
+              <th>Keputusan</th>
+              <th>Nama</th>
+              <th>NIP</th>
+              <th>Unit/Instansi</th>
+              <th>Alasan</th>
+              <th>Konsultasi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="7" style="text-align:center;color:#94a3b8">Belum ada keputusan.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card section admin-section">
+      <div class="section-head">
+        <div>
+          <div class="admin-kicker">Monitoring Internal</div>
+          <div class="section-title">Log Akses Website per Instansi</div>
+          <div class="section-desc">
+            Mencatat saat data instansi dibuka melalui tombol <strong>Tampilkan</strong>. 
+            Log ini menunjukkan akses yang terdeteksi, bukan verifikasi identitas pengguna.
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table style="min-width:900px">
+          <thead>
+            <tr>
+              <th>Instansi</th>
+              <th>Kategori</th>
+              <th>Status Akses</th>
+              <th>Akses Pertama</th>
+              <th>Akses Terakhir</th>
+              <th class="num">Jumlah Akses</th>
+            </tr>
+          </thead>
+          <tbody id="accessLogBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentInstitutionKey = null;
+let currentDecision = null;
+let consultationRequested = null;
+let selectedConsultationSlot = null;
+
+const consultationSlots = {
+  "2026-10-08": [
+    "14.00–14.10","14.20–14.30","14.40–14.50","15.00–15.10",
+    "15.20–15.30","15.40–15.50","16.00–16.10"
+  ],
+  "2026-10-09": [
+    "08.00–08.10","08.20–08.30","08.40–08.50","09.00–09.10",
+    "09.20–09.30","09.40–09.50","10.00–10.10","10.20–10.30",
+    "10.40–10.50","11.00–11.10",
+    "13.20–13.30","13.40–13.50","14.00–14.10","14.20–14.30",
+    "14.40–14.50","15.00–15.10","15.20–15.30","15.40–15.50","16.00–16.10"
+  ]
+};
+
+const accessLog = {
+  ANRI: {first:null,last:null,count:0},
+  PANRB:{first:null,last:null,count:0},
+  JABAR:{first:null,last:null,count:0}
+};
+
+const demoData = {
+  ANRI: {
+    name:"Arsip Nasional Republik Indonesia",
+    tag:"tidak_mengajukan_perubahan",
+    servicesWithRespondents:null,
+    l1:8,l2:26,services:74,online:1432,offline:518,before:1950,after:null,
+    rows:[
+      ["Deputi Bidang Penyelamatan, Pelestarian, dan Pelindungan Arsip","Direktorat Pelestarian dan Pelindungan Arsip","Pendampingan Teknis Bidang Kearsipan",2,0,"",2,""],
+      ["Sekretariat Utama","Biro Hukum, Kerja Sama, dan Hubungan Masyarakat","Permohonan Kunjungan Kelembagaan",1,0,"",1,""],
+      ["Sekretariat Utama","Biro Hukum, Kerja Sama, dan Hubungan Masyarakat","Permohonan Magang/PKL",0,0,"",0,""]
+    ]
+  },
+  PANRB: {
+    name:"Kementerian PANRB",tag:"mengajukan_perubahan",servicesWithRespondents:null,l1:7,l2:31,services:92,online:2110,offline:830,before:2940,after:null,
+    rows:[
+      ["Deputi Bidang Pelayanan Publik","Asisten Deputi Pemberdayaan Partisipasi Publik","Fasilitasi Survei Kepuasan Masyarakat",24,10,"",34,""],
+      ["Sekretariat Kementerian","Biro SDM dan Umum","Layanan Administrasi Kepegawaian",0,0,"",0,""]
+    ]
+  },
+  JABAR: {
+    name:"Pemerintah Provinsi Jawa Barat",tag:"tidak_mengajukan_perubahan",servicesWithRespondents:null,l1:42,l2:115,services:380,online:12540,offline:6240,before:18780,after:null,
+    rows:[
+      ["Dinas Kesehatan","UPTD Pelayanan Kesehatan","Pelayanan Informasi Kesehatan",53,22,"",75,""],
+      ["Dinas Pendidikan","Cabang Dinas Pendidikan","Layanan Informasi Pendidikan",0,0,"",0,""]
+    ]
+  }
+};
+
+function fmt(n){ return n===null || n==="" ? "—" : new Intl.NumberFormat("id-ID").format(n); }
+
+
+
+function formatAccessDate(date){
+  if(!date) return "Belum ada akses";
+  return new Intl.DateTimeFormat("id-ID", {
+    day:"2-digit", month:"short", year:"numeric",
+    hour:"2-digit", minute:"2-digit"
+  }).format(date);
+}
+
+function accessCategoryLabel(tag){
+  return tag === "mengajukan_perubahan" ? "Mengajukan Perubahan" : "Tidak Mengajukan Perubahan";
+}
+
+function recordAccess(key){
+  const now = new Date();
+  currentInstitutionKey = key;
+
+  const log = accessLog[key];
+  if(!log.first) log.first = now;
+  log.last = now;
+  log.count += 1;
+
+  renderAccessLog();
+}
+
+function renderAccessLog(){
+  const body = document.getElementById("accessLogBody");
+  if(!body) return;
+
+  body.innerHTML = "";
+
+  if(!currentInstitutionKey){
+    body.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align:center;color:#94a3b8">
+          Pilih dan tampilkan instansi untuk melihat log akses.
+        </td>
+      </tr>`;
+    return;
+  }
+
+  const key = currentInstitutionKey;
+  const inst = demoData[key];
+  const log = accessLog[key];
+  const accessed = log.count > 0;
+
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td><strong>${inst.name}</strong></td>
+    <td><span class="tag-badge ${inst.tag === "mengajukan_perubahan" ? "tag-change" : "tag-skm"}">${accessCategoryLabel(inst.tag)}</span></td>
+    <td>${accessed ? '<span class="badge green">Akses Terdeteksi</span>' : '<span class="badge gray">Belum Ada Akses</span>'}</td>
+    <td>${formatAccessDate(log.first)}</td>
+    <td>${formatAccessDate(log.last)}</td>
+    <td class="num">${log.count}</td>`;
+  body.appendChild(tr);
+}
+
+function renderInstitutionTag(tag){
+  const selectorTag = document.getElementById("selectorTag");
+  const headerTag = document.getElementById("institutionTag");
+
+  if(tag === "mengajukan_perubahan"){
+    selectorTag.innerHTML = '<span class="tag-badge tag-change">Mengajukan Perubahan</span>';
+    headerTag.textContent = "Mengajukan Perubahan";
+    headerTag.className = "tag-badge tag-change";
+  }else{
+    selectorTag.innerHTML = '<span class="tag-badge tag-skm">Tidak Mengajukan Perubahan</span>';
+    headerTag.textContent = "Tidak Mengajukan Perubahan";
+    headerTag.className = "tag-badge tag-skm";
+  }
+}
+
+function updateDecisionVisibility(tag){
+  const decisionSection = document.getElementById("decisionSection");
+
+  if(tag === "mengajukan_perubahan"){
+    decisionSection.classList.remove("hidden");
+  }else{
+    decisionSection.classList.add("hidden");
+    cancelDecision();
+  }
+}
+
+function showInstitution(){
+  const key = document.getElementById("institutionSelect").value;
+  if(!key){ alert("Silakan pilih instansi terlebih dahulu."); return; }
+  const d = demoData[key];
+
+  recordAccess(key);
+
+  document.getElementById("landingEmpty").classList.add("hidden");
+  document.getElementById("appContent").classList.remove("hidden");
+  document.getElementById("institutionName").textContent = d.name;
+  document.getElementById("globalStatus").textContent = d.name;
+  renderInstitutionTag(d.tag);
+  updateDecisionVisibility(d.tag);
+  document.getElementById("sumL1").textContent = fmt(d.l1);
+  document.getElementById("sumL2").textContent = fmt(d.l2);
+  document.getElementById("sumService").textContent = fmt(d.services);
+  document.getElementById("sumServiceWithRespondents").textContent = fmt(d.servicesWithRespondents);
+  document.getElementById("sumOnline").textContent = fmt(d.online);
+  document.getElementById("sumOffline").textContent = fmt(d.offline);
+  document.getElementById("sumBefore").textContent = fmt(d.before);
+  document.getElementById("sumAfter").textContent = fmt(d.after);
+
+  const body = document.getElementById("serviceBody");
+  body.innerHTML = "";
+  d.rows.forEach(r => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td>
+      <td class="num">${fmt(r[3])}</td>
+      <td class="num preclean">${fmt(r[4])}</td>
+      <td class="num postclean">${fmt(r[5])}</td>
+      <td class="num preclean">${fmt(r[6])}</td>
+      <td class="num postclean">${fmt(r[7])}</td>`;
+    body.appendChild(tr);
+  });
+  document.getElementById("serviceInfo").textContent = `${d.rows.length} data ditampilkan`;
+
+  document.getElementById("logBody").innerHTML =
+    `<tr><td colspan="7" style="text-align:center;color:#94a3b8">Belum ada data upload bulk survei offline.</td></tr>`;
+  cancelDecision();
+}
+
+function chooseDecision(type){
+  currentDecision = type;
+
+  document.getElementById("decisionForm").classList.remove("hidden");
+  document.getElementById("acceptChoice").classList.toggle("active", type==="accept");
+  document.getElementById("rejectChoice").classList.toggle("active", type==="reject");
+  document.getElementById("rejectReason").classList.toggle("hidden", type!=="reject");
+
+  if(type !== "reject"){
+    resetConsultation();
+  }
+}
+
+function setConsultation(value){
+  consultationRequested = value;
+  selectedConsultationSlot = null;
+
+  document.getElementById("consultYes").classList.toggle("active", value === true);
+  document.getElementById("consultNo").classList.toggle("active", value === false);
+  document.getElementById("consultationScheduler").classList.toggle("hidden", value !== true);
+
+  if(value !== true){
+    document.getElementById("consultationDate").value = "";
+    renderSlots();
+  }
+}
+
+function resetConsultation(){
+  consultationRequested = null;
+  selectedConsultationSlot = null;
+
+  const yes = document.getElementById("consultYes");
+  const no = document.getElementById("consultNo");
+  const scheduler = document.getElementById("consultationScheduler");
+  const date = document.getElementById("consultationDate");
+
+  if(yes) yes.classList.remove("active");
+  if(no) no.classList.remove("active");
+  if(scheduler) scheduler.classList.add("hidden");
+  if(date) date.value = "";
+  renderSlots();
+}
+
+function renderSlots(){
+  const grid = document.getElementById("slotGrid");
+  if(!grid) return;
+
+  const date = document.getElementById("consultationDate")?.value || "";
+  selectedConsultationSlot = null;
+
+  if(!date){
+    grid.innerHTML = '<div style="grid-column:1/-1;color:#94a3b8;font-size:13px;padding:10px 0">Pilih tanggal terlebih dahulu.</div>';
+    return;
+  }
+
+  grid.innerHTML = "";
+  (consultationSlots[date] || []).forEach(time => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "slot";
+    btn.textContent = time;
+    btn.onclick = () => {
+      selectedConsultationSlot = {date, time};
+      grid.querySelectorAll(".slot").forEach(el => el.classList.remove("active"));
+      btn.classList.add("active");
+    };
+    grid.appendChild(btn);
+  });
+}
+
+function consultationDateLabel(date){
+  if(date === "2026-10-08") return "Kamis, 8 Oktober 2026";
+  if(date === "2026-10-09") return "Jumat, 9 Oktober 2026";
+  return date || "—";
+}
+
+function openDecisionConfirmation(){
+  if(!currentDecision){
+    alert("Silakan pilih keputusan Terima atau Tolak.");
+    return;
+  }
+
+  const name = document.getElementById("reviewerName").value.trim();
+  const nip = document.getElementById("reviewerNip").value.trim();
+  const unit = document.getElementById("reviewerUnit").value.trim();
+
+  if(!name || !nip || !unit){
+    alert("Lengkapi Nama Reviewer, NIP, dan Unit/Instansi.");
+    return;
+  }
+
+  const reason = document.getElementById("rejectionReason").value.trim();
+
+  if(currentDecision === "reject"){
+    if(!reason){
+      alert("Alasan penolakan wajib diisi.");
+      return;
+    }
+    if(consultationRequested === null){
+      alert("Pilih apakah instansi memerlukan konsultasi dengan Tim Kementerian PANRB.");
+      return;
+    }
+    if(consultationRequested === true && !selectedConsultationSlot){
+      alert("Silakan pilih tanggal dan waktu konsultasi.");
+      return;
+    }
+  }
+
+  const inst = currentInstitutionKey ? demoData[currentInstitutionKey] : null;
+  document.getElementById("confirmInstitution").textContent = inst?.name || "—";
+  document.getElementById("confirmDecision").textContent = currentDecision === "accept" ? "Terima" : "Tolak";
+  document.getElementById("confirmReviewer").textContent = `${name} · ${nip} · ${unit}`;
+  document.getElementById("confirmReason").textContent = currentDecision === "reject" ? reason : "—";
+
+  let consultationText = "Tidak dijadwalkan";
+  if(currentDecision === "reject" && consultationRequested === true && selectedConsultationSlot){
+    consultationText = `${consultationDateLabel(selectedConsultationSlot.date)}, ${selectedConsultationSlot.time} WIB`;
+  }
+  document.getElementById("confirmConsultation").textContent = consultationText;
+  document.getElementById("zoomDetails").classList.toggle(
+    "hidden",
+    !(currentDecision === "reject" && consultationRequested === true && selectedConsultationSlot)
+  );
+
+  document.getElementById("confirmOverlay").classList.remove("hidden");
+}
+
+function closeDecisionConfirmation(){
+  document.getElementById("confirmOverlay").classList.add("hidden");
+}
+
+function savePrototypeDecision(){
+  closeDecisionConfirmation();
+  alert("Prototype: keputusan siap disimpan. Penyimpanan permanen akan diaktifkan saat backend dihubungkan.");
+}
+
+function cancelDecision(){
+  currentDecision = null;
+  document.getElementById("decisionForm").classList.add("hidden");
+  document.getElementById("acceptChoice").classList.remove("active");
+  document.getElementById("rejectChoice").classList.remove("active");
+  document.getElementById("rejectReason").classList.add("hidden");
+
+  const reason = document.getElementById("rejectionReason");
+  if(reason) reason.value = "";
+
+  resetConsultation();
+}
+
+document.getElementById("institutionSelect").addEventListener("change", function(){
+  const key = this.value;
+  const selectorTag = document.getElementById("selectorTag");
+  if(!key){
+    selectorTag.textContent = "—";
+    return;
+  }
+  renderInstitutionTag(demoData[key].tag);
+});
+
+renderAccessLog();
+
+document.getElementById("confirmOverlay").addEventListener("click", function(event){
+  if(event.target.id === "confirmOverlay") closeDecisionConfirmation();
+});
+</script>
+
+<div id="confirmOverlay" class="modal-overlay hidden">
+  <div class="modal">
+    <h2>Konfirmasi Keputusan</h2>
+    <p>Periksa kembali informasi sebelum keputusan disimpan.</p>
+
+    <div class="confirm-list">
+      <div class="confirm-row"><span>Instansi</span><strong id="confirmInstitution">—</strong></div>
+      <div class="confirm-row"><span>Keputusan</span><strong id="confirmDecision">—</strong></div>
+      <div class="confirm-row"><span>Reviewer</span><strong id="confirmReviewer">—</strong></div>
+      <div class="confirm-row"><span>Alasan</span><strong id="confirmReason">—</strong></div>
+      <div class="confirm-row"><span>Konsultasi</span><strong id="confirmConsultation">—</strong></div>
+    </div>
+
+    <div id="zoomDetails" class="zoom-box hidden">
+      <strong>Zoom Konsultasi</strong><br>
+      Meeting ID: 428 152 7886<br>
+      Passcode: PPP2026<br>
+      <a href="https://us02web.zoom.us/j/4281527886?pwd=hBrhxZsUkgMpteLDPHDC0jhXhLjBCT.1&omn=84594673283"
+         target="_blank" rel="noopener">Buka Zoom Meeting</a>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeDecisionConfirmation()">Kembali</button>
+      <button class="btn-primary" onclick="savePrototypeDecision()">Simpan Keputusan</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
