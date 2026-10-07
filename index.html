@@ -189,6 +189,31 @@
     border:1px solid #d9e5ff;font-size:13px;line-height:1.55
   }
   .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+  .loading-panel{
+    margin-top:12px;padding:12px 14px;border:1px solid #d9e5ff;
+    background:#f8fbff;border-radius:12px;
+  }
+  .loading-panel.hidden{display:none!important}
+  .loading-row{
+    display:flex;justify-content:space-between;gap:12px;align-items:center;
+    margin-bottom:8px;font-size:12px;color:#52647e;
+  }
+  .loading-row strong{color:#2f4e86}
+  .progress-track{
+    width:100%;height:8px;background:#e8eef9;border-radius:999px;
+    overflow:hidden;position:relative;
+  }
+  .progress-bar{
+    height:100%;width:35%;border-radius:999px;
+    background:linear-gradient(90deg,#4b61d1,#6f82ea);
+    position:absolute;left:-35%;
+    animation:indeterminateLoad 1.25s ease-in-out infinite;
+  }
+  @keyframes indeterminateLoad{
+    0%{left:-35%}
+    50%{left:45%}
+    100%{left:100%}
+  }
   @media(max-width:800px){.slot-grid{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:1000px){
     .grid-2,.metric-grid,.form-grid,.filters,.selector-row{grid-template-columns:1fr}
@@ -227,6 +252,16 @@
         </div>
       </div>
       <button class="btn-primary" onclick="showInstitution()">Tampilkan</button>
+    </div>
+
+    <div id="loadingPanel" class="loading-panel hidden" aria-live="polite">
+      <div class="loading-row">
+        <strong id="loadingTitle">Memuat data...</strong>
+        <span id="loadingStep">Mohon tunggu</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-bar"></div>
+      </div>
     </div>
   </div>
 
@@ -476,6 +511,7 @@ let selectedConsultationSlot = null;
 let appConfig = {};
 let institutionIndex = {};
 let consultationAvailability = {};
+let consultationConfigLoaded = false;
 let serviceRows = [];
 let filteredServiceRows = [];
 let servicePage = 1;
@@ -585,6 +621,46 @@ function setLoading(loading){
   btn.style.opacity = loading ? ".7" : "1";
 }
 
+let loadingMessageTimer = null;
+
+function showLoadingProgress(title = "Memuat data...", messages = []){
+  const panel = document.getElementById("loadingPanel");
+  const titleEl = document.getElementById("loadingTitle");
+  const stepEl = document.getElementById("loadingStep");
+
+  if(!panel) return;
+
+  panel.classList.remove("hidden");
+  titleEl.textContent = title;
+
+  const steps = messages.length ? messages : [
+    "Menghubungkan ke server",
+    "Memuat data",
+    "Menyiapkan tampilan"
+  ];
+
+  let i = 0;
+  stepEl.textContent = steps[0];
+
+  if(loadingMessageTimer) clearInterval(loadingMessageTimer);
+
+  loadingMessageTimer = setInterval(() => {
+    i = (i + 1) % steps.length;
+    stepEl.textContent = steps[i];
+  }, 1400);
+}
+
+function hideLoadingProgress(){
+  const panel = document.getElementById("loadingPanel");
+
+  if(loadingMessageTimer){
+    clearInterval(loadingMessageTimer);
+    loadingMessageTimer = null;
+  }
+
+  if(panel) panel.classList.add("hidden");
+}
+
 function renderBootstrapInstitutions(institutions){
   institutionIndex = {};
   const select = document.getElementById("institutionSelect");
@@ -620,33 +696,66 @@ function setConsultationAvailability(days){
 }
 
 async function initializeApp(){
+  showLoadingProgress("Memuat daftar instansi", [
+    "Menghubungkan ke server",
+    "Membaca daftar instansi",
+    "Menyiapkan dropdown"
+  ]);
+
+  const CACHE_KEY = "skm_institution_list_cache_v1";
+  const CACHE_MAX_AGE = 10 * 60 * 1000; // 10 minutes
+
+  // 1. Render browser-cached institution list immediately if available.
   try{
-    const data = await apiGet("bootstrap");
+    const cachedRaw = localStorage.getItem(CACHE_KEY);
 
-    appConfig = data.config || {};
+    if(cachedRaw){
+      const cached = JSON.parse(cachedRaw);
 
-    if(appConfig.zoomMeetingId){
-      document.getElementById("zoomMeetingId").textContent = appConfig.zoomMeetingId;
+      if(
+        cached &&
+        Array.isArray(cached.institutions) &&
+        Date.now() - Number(cached.savedAt || 0) < CACHE_MAX_AGE
+      ){
+        renderBootstrapInstitutions(cached.institutions);
+      }
     }
-    if(appConfig.zoomPasscode){
-      document.getElementById("zoomPasscode").textContent = appConfig.zoomPasscode;
-    }
-    if(appConfig.zoomUrl){
-      document.getElementById("zoomLink").href = appConfig.zoomUrl;
-    }
+  }catch(e){
+    // Ignore local cache issues.
+  }
 
-    renderBootstrapInstitutions(data.institutions || []);
-    setConsultationAvailability(data.consultationAvailability || []);
+  // 2. Refresh the lightweight list from Apps Script in the background.
+  try{
+    const data = await apiGet("institutions");
+    const institutions = data.institutions || [];
 
-    if(appConfig.dataLastUpdated){
-      document.getElementById("lastUpdated").textContent = appConfig.dataLastUpdated;
+    renderBootstrapInstitutions(institutions);
+
+    try{
+      localStorage.setItem(
+        CACHE_KEY,
+        JSON.stringify({
+          savedAt: Date.now(),
+          institutions
+        })
+      );
+    }catch(e){
+      // Browser storage is optional.
     }
 
     renderAccessLog(null);
+    hideLoadingProgress();
   }catch(error){
-    document.getElementById("institutionSelect").innerHTML =
-      '<option value="">Gagal memuat daftar instansi</option>';
-    alert(error.message);
+    const select = document.getElementById("institutionSelect");
+
+    // Keep cached options if already available.
+    if(select.options.length <= 1){
+      select.innerHTML =
+        '<option value="">Gagal memuat daftar instansi — muat ulang halaman</option>';
+    }
+
+    console.error(error);
+    hideLoadingProgress();
   }
 }
 
@@ -658,6 +767,12 @@ async function showInstitution(){
   }
 
   setLoading(true);
+  showLoadingProgress("Memuat data instansi", [
+    "Mengambil data ringkasan",
+    "Memuat rincian pelayanan",
+    "Menyiapkan tabel",
+    "Memuat log akses"
+  ]);
 
   try{
     const data = await apiGet("institution", {
@@ -673,6 +788,7 @@ async function showInstitution(){
     alert(error.message);
   }finally{
     setLoading(false);
+    hideLoadingProgress();
   }
 }
 
@@ -926,7 +1042,49 @@ function chooseDecision(type){
   }
 }
 
-function setConsultation(value){
+
+async function ensureConsultationConfig(){
+  if(consultationConfigLoaded) return true;
+
+  const dateSelect = document.getElementById("consultationDate");
+  const originalHtml = dateSelect.innerHTML;
+
+  dateSelect.innerHTML = '<option value="">Memuat jadwal...</option>';
+  dateSelect.disabled = true;
+
+  try{
+    const data = await apiGet("consultationConfig");
+
+    setConsultationAvailability(data.availability || []);
+
+    if(data.zoomMeetingId){
+      document.getElementById("zoomMeetingId").textContent = data.zoomMeetingId;
+    }
+
+    if(data.zoomPasscode){
+      document.getElementById("zoomPasscode").textContent = data.zoomPasscode;
+    }
+
+    if(data.zoomUrl){
+      document.getElementById("zoomLink").href = data.zoomUrl;
+    }
+
+    consultationConfigLoaded = true;
+    return true;
+
+  }catch(error){
+    dateSelect.innerHTML = originalHtml;
+    alert("Jadwal konsultasi belum dapat dimuat. Silakan coba kembali.");
+    console.error(error);
+    return false;
+
+  }finally{
+    dateSelect.disabled = false;
+  }
+}
+
+
+async function setConsultation(value){
   consultationRequested = value;
   selectedConsultationSlot = null;
 
@@ -934,10 +1092,19 @@ function setConsultation(value){
   document.getElementById("consultNo").classList.toggle("active", value === false);
   document.getElementById("consultationScheduler").classList.toggle("hidden", value !== true);
 
-  if(value !== true){
-    document.getElementById("consultationDate").value = "";
-    renderSlots();
+  if(value === true){
+    const ok = await ensureConsultationConfig();
+
+    if(!ok){
+      consultationRequested = null;
+      document.getElementById("consultYes").classList.remove("active");
+      document.getElementById("consultationScheduler").classList.add("hidden");
+    }
+    return;
   }
+
+  document.getElementById("consultationDate").value = "";
+  renderSlots();
 }
 
 function resetConsultation(){
@@ -1081,8 +1248,8 @@ async function savePrototypeDecision(){
     await apiPost("saveVerification", payload);
     closeDecisionConfirmation();
 
-    const freshAvailability = await apiGet("availability");
-    setConsultationAvailability(freshAvailability);
+    const freshConfig = await apiGet("consultationConfig");
+    setConsultationAvailability(freshConfig.availability || []);
 
     const refreshed = await apiGet("institution", {
       id:currentInstitutionId,
