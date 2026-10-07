@@ -311,7 +311,7 @@
           <div class="section-title">Rincian Data per Pelayanan</div>
           <div class="section-desc">Seluruh pelayanan tetap ditampilkan, termasuk pelayanan dengan 0 responden.</div>
         </div>
-        <button class="btn-secondary">Ekspor Excel</button>
+        <button class="btn-secondary" onclick="exportServiceExcel(this)">Ekspor Excel</button>
       </div>
 
       <div class="filters">
@@ -353,7 +353,7 @@
           <div class="section-title">Log Upload Bulk Survei Offline</div>
           <div class="section-desc">Riwayat unggahan data offline yang terkait dengan instansi terpilih.</div>
         </div>
-        <button class="btn-secondary">Ekspor Excel</button>
+        <button class="btn-secondary" onclick="exportUploadLogExcel(this)">Ekspor Excel</button>
       </div>
       <div class="table-wrap">
         <table>
@@ -514,6 +514,7 @@ let consultationAvailability = {};
 let consultationConfigLoaded = false;
 let serviceRows = [];
 let filteredServiceRows = [];
+let uploadLogRows = [];
 let servicePage = 1;
 const SERVICE_PAGE_SIZE = 50;
 
@@ -959,6 +960,7 @@ function renderServiceTable(){
 }
 
 function renderUploadLog(rows){
+  uploadLogRows = Array.isArray(rows) ? rows : [];
   const body = document.getElementById("logBody");
   body.innerHTML = "";
 
@@ -980,6 +982,182 @@ function renderUploadLog(rows){
     body.appendChild(tr);
   });
 }
+
+
+function safeFileName(value){
+  return String(value || "Instansi")
+    .replace(/[\\/:*?"<>|]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120);
+}
+
+function excelNumberOrBlank(value){
+  if(value === null || value === "" || typeof value === "undefined") return "";
+  const n = Number(value);
+  return Number.isFinite(n) ? n : value;
+}
+
+let xlsxLoaderPromise = null;
+
+function ensureXLSX(){
+  if(window.XLSX) return Promise.resolve(window.XLSX);
+  if(xlsxLoaderPromise) return xlsxLoaderPromise;
+
+  xlsxLoaderPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    script.async = true;
+
+    script.onload = () => {
+      if(window.XLSX) resolve(window.XLSX);
+      else reject(new Error("Library Excel gagal dimuat."));
+    };
+
+    script.onerror = () => reject(new Error("Library Excel gagal dimuat. Periksa koneksi internet lalu coba lagi."));
+
+    document.head.appendChild(script);
+  });
+
+  return xlsxLoaderPromise;
+}
+
+async function exportServiceExcel(button){
+  if(!currentInstitutionData){
+    alert("Pilih dan tampilkan instansi terlebih dahulu.");
+    return;
+  }
+
+  const rows = filteredServiceRows || [];
+
+  if(!rows.length){
+    alert("Tidak ada data rincian pelayanan untuk diekspor.");
+    return;
+  }
+
+  const originalText = button?.textContent;
+
+  if(button){
+    button.disabled = true;
+    button.textContent = "Menyiapkan...";
+  }
+
+  try{
+    const XLSX = await ensureXLSX();
+
+    const exportRows = rows.map(r => ({
+      "Level 1": r.level1 || "",
+      "Level 2": r.level2 || "",
+      "Nama Pelayanan": r.namaPelayanan || "",
+      "Resp Online": excelNumberOrBlank(r.respOnline),
+      "Resp Bulk Offline Sebelum Cleansing": excelNumberOrBlank(r.respOfflineSebelum),
+      "Resp Bulk Offline Pasca Cleansing": excelNumberOrBlank(r.respOfflinePasca),
+      "Total Responden Sebelum Cleansing": excelNumberOrBlank(r.totalSebelum),
+      "Total Responden Pasca Cleansing": excelNumberOrBlank(r.totalPasca)
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportRows);
+
+    ws["!cols"] = [
+      {wch:32},
+      {wch:32},
+      {wch:42},
+      {wch:14},
+      {wch:32},
+      {wch:30},
+      {wch:32},
+      {wch:30}
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Rincian Pelayanan");
+
+    const instName = currentInstitutionData.institution?.name || "Instansi";
+    const filename = `Rincian_Data_Pelayanan_${safeFileName(instName)}.xlsx`;
+
+    XLSX.writeFile(wb, filename, {
+      compression: true
+    });
+
+  }catch(error){
+    alert(error.message || "Gagal mengekspor data.");
+    console.error(error);
+
+  }finally{
+    if(button){
+      button.disabled = false;
+      button.textContent = originalText || "Ekspor Excel";
+    }
+  }
+}
+
+async function exportUploadLogExcel(button){
+  if(!currentInstitutionData){
+    alert("Pilih dan tampilkan instansi terlebih dahulu.");
+    return;
+  }
+
+  const rows = uploadLogRows || [];
+
+  if(!rows.length){
+    alert("Belum ada log upload bulk survei offline untuk diekspor.");
+    return;
+  }
+
+  const originalText = button?.textContent;
+
+  if(button){
+    button.disabled = true;
+    button.textContent = "Menyiapkan...";
+  }
+
+  try{
+    const XLSX = await ensureXLSX();
+
+    const exportRows = rows.map(r => ({
+      "Timestamp Unggah Survei": r.timestamp || "",
+      "Level 1": r.level1 || "",
+      "Level 2": r.level2 || "",
+      "Nama Survei": r.namaSurvei || "",
+      "Jumlah Responden": excelNumberOrBlank(r.jumlahResponden),
+      "Status Approval Akun PJ": r.statusApproval || "",
+      "Status Usulan Perubahan": r.statusPerubahan || ""
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportRows);
+
+    ws["!cols"] = [
+      {wch:22},
+      {wch:32},
+      {wch:32},
+      {wch:42},
+      {wch:18},
+      {wch:26},
+      {wch:26}
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Log Upload Bulk");
+
+    const instName = currentInstitutionData.institution?.name || "Instansi";
+    const filename = `Log_Upload_Bulk_${safeFileName(instName)}.xlsx`;
+
+    XLSX.writeFile(wb, filename, {
+      compression: true
+    });
+
+  }catch(error){
+    alert(error.message || "Gagal mengekspor data.");
+    console.error(error);
+
+  }finally{
+    if(button){
+      button.disabled = false;
+      button.textContent = originalText || "Ekspor Excel";
+    }
+  }
+}
+
 
 function renderVerificationLog(rows){
   const body = document.getElementById("verificationLogBody");
