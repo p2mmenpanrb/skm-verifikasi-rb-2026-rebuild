@@ -1295,11 +1295,17 @@ document.getElementById("institutionSelect").addEventListener("change", function
   if(inst) renderInstitutionTag(inst.category);
 });
 
-document.getElementById("confirmOverlay").addEventListener("click", function(event){
-  if(event.target.id === "confirmOverlay") closeDecisionConfirmation();
-});
+window.addEventListener("DOMContentLoaded", function(){
+  const confirmOverlay = document.getElementById("confirmOverlay");
 
-initializeApp();
+  if(confirmOverlay){
+    confirmOverlay.addEventListener("click", function(event){
+      if(event.target.id === "confirmOverlay") closeDecisionConfirmation();
+    });
+  }
+
+  initializeApp();
+});
 </script>
 
 <div id="confirmOverlay" class="modal-overlay hidden">
